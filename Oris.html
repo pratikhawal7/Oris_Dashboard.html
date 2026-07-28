@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orise (An ATS Company) | Interactive Prep Tool</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* === CSS VARIABLES (DARK MODE DEFAULT) === */
+        :root {
+            --bg-main: #090d16;
+            --bg-card: #111827;
+            --bg-card-hover: #1f293d;
+            --border-color: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --ambient-opacity: 0.06;
+            --card-shadow: rgba(0, 242, 254, 0.12);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #3b82f6;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --accent-purple: #a855f7;
+            --gradient-accent: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            --gradient-heading: linear-gradient(90deg, #00f2fe, #3b82f6, #a855f7, #00f2fe);
+        }
+
+        /* === LIGHT MODE VARIABLES === */
+        body.light-mode {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --ambient-opacity: 0.15;
+            --card-shadow: rgba(0, 0, 0, 0.1);
+            --gradient-heading: linear-gradient(90deg, #0284c7, #4338ca, #7e22ce, #0284c7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* Ambient Glow Background */
+        .ambient-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            background: 
+                radial-gradient(circle at 15% 20%, rgba(0, 242, 254, var(--ambient-opacity)) 0%, transparent 40%),
+                radial-gradient(circle at 85% 60%, rgba(59, 130, 246, var(--ambient-opacity)) 0%, transparent 40%);
+            transition: background 0.4s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Navigation */
+        header {
+            position: sticky;
+            top: 0;
+            background: rgba(var(--bg-main), 0.85); /* fallback */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            padding: 1rem 0;
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+
+        /* Hack for dynamic rgba background based on theme */
+        body:not(.light-mode) header { background: rgba(9, 13, 22, 0.85); }
+        body.light-mode header { background: rgba(248, 250, 252, 0.85); }
+
+        .nav-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            -webkit-text-fill-color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--accent-cyan);
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            color: var(--accent-amber);
+            border-color: var(--accent-amber);
+            transform: rotate(30deg);
+        }
+
+        /* SCROLL ANIMATIONS (POP & SLIDE IN) */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(40px) scale(0.95);
+            transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            will-change: opacity, transform;
+        }
+
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Delay modifiers for staggered animations */
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+
+        /* Animated Headings */
+        .animated-heading {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--gradient-heading);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShimmer 6s infinite linear;
+            display: inline-block;
+        }
+
+        @keyframes gradientShimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 5rem 0 3rem;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 650px;
+            margin: 0 auto 3rem;
+        }
+
+        .quick-facts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .fact-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, background-color 0.4s ease;
+        }
+
+        .fact-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 8px 25px var(--card-shadow);
+        }
+
+        .fact-icon {
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 0.8rem;
+        }
+
+        .fact-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .fact-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Section Formatting */
+        section {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            margin-bottom: 2.5rem;
+        }
+
+        .section-tag {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+
+        /* Key Industries */
+        .industries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .industry-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem 1rem;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .industry-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-cyan);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px var(--card-shadow);
+        }
+
+        .industry-card i {
+            font-size: 2rem;
+            color: var(--accent-cyan);
+            margin-bottom: 0.8rem;
+        }
+
+        .industry-card h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        /* Interactive Clickable Grid (Challenges & Solutions) */
+        .interactive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .interactive-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .interactive-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-5px);
+            background: var(--bg-card-hover);
+            box-shadow: 0 8px 25px var(--card-shadow);
+        }
+
+        .interactive-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .interactive-card-header i { font-size: 1.3rem; }
+        .interactive-card-title { font-size: 1rem; font-weight: 600; }
+        .click-hint {
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+
+        /* CLIENTS & COMPETITORS SECTION (NEW) */
+        .market-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) { .market-split { grid-template-columns: 1fr; } }
+
+        .market-column {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .market-column h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .company-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .company-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            background: var(--bg-card-hover);
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .company-item:hover {
+            transform: translateX(5px);
+            background: rgba(0, 242, 254, 0.05);
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .emoji-icon {
+            font-size: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .company-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        /* PESTLE & SWOT ANALYSIS */
+        .analytics-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        
+        .pestle-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        @media (max-width: 900px) { .pestle-wrapper { grid-template-columns: 1fr; } }
+
+        .chart-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+        }
+
+        .pestle-bullets {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .pestle-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .pestle-letter {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            background: rgba(0, 242, 254, 0.1);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .pestle-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .pestle-text strong {
+            color: var(--text-main);
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .swot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .swot-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.2rem;
+        }
+
+        .swot-box.s { border-top: 3px solid var(--accent-emerald); }
+        .swot-box.w { border-top: 3px solid var(--accent-amber); }
+        .swot-box.o { border-top: 3px solid var(--accent-cyan); }
+        .swot-box.t { border-top: 3px solid var(--accent-rose); }
+
+        .swot-box h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .swot-box ul {
+            list-style: none;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .swot-box ul li {
+            margin-bottom: 0.4rem;
+            padding-left: 1rem;
+            position: relative;
+        }
+        .swot-box ul li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--text-main);
+        }
+
+        /* Factory of the Future - Interactive Flip Cards */
+        .future-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            perspective: 1000px;
+        }
+
+        .flip-card {
+            background-color: transparent;
+            height: 220px;
+            cursor: pointer;
+            perspective: 1000px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: left;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .flip-card-front {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+        }
+
+        .flip-card-front:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 4px 20px var(--card-shadow);
+        }
+
+        .flip-card-back {
+            background: var(--bg-card-hover);
+            border: 1px solid var(--accent-emerald);
+            transform: rotateY(180deg);
+        }
+
+        .future-num {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            color: rgba(148, 163, 184, 0.15); /* adapt to both themes */
+            position: absolute;
+            top: 10px;
+            right: 15px;
+        }
+
+        .future-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .future-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .back-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-emerald);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .back-desc {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        /* Pop-up Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background: var(--bg-card);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            padding: 2rem;
+            position: relative;
+            transform: scale(0.85);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-close {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.2rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .modal-close:hover { color: var(--accent-rose); }
+        .modal-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.2rem; }
+        .modal-header i { font-size: 1.8rem; color: var(--accent-cyan); }
+        .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+        .modal-bullet {
+            background: var(--bg-card-hover);
+            border-left: 3px solid var(--accent-cyan);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        footer {
+            padding: 2rem 0;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <header>
+        <div class="container nav-wrapper">
+            <div class="logo">ORISE <span>AN ATS COMPANY</span></div>
+            <nav>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#industries">Industries</a></li>
+                    <li><a href="#challenges">Challenges</a></li>
+                    <li><a href="#market">Clients & Competitors</a></li>
+                    <li><a href="#future">Factory of the Future</a></li>
+                </ul>
+                <button class="theme-toggle" id="themeToggle" title="Toggle Light/Dark Mode">
+                    <i class="fa-solid fa-sun" id="themeIcon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- HERO / OVERVIEW -->
+        <section id="overview" class="hero">
+            <div class="reveal-on-scroll">
+                <h1 class="hero-title animated-heading">Industrial Automation & Digital Intelligence</h1>
+                <p class="hero-subtitle">Interactive preparation dashboard analyzing Orise's market stance, technology offerings, and strategic value.</p>
+            </div>
+        </section>
+
+        <!-- KEY INDUSTRIES SERVED -->
+        <section id="industries">
+            <div class="section-header reveal-on-scroll">
+                <span class="section-tag">Target Sectors</span>
+                <h2 class="section-title animated-heading">Key Industries Served</h2>
+            </div>
+            <div class="industries-grid">
+                <div class="industry-card reveal-on-scroll delay-1">
+                    <i class="fa-solid fa-dna" style="color:var(--accent-rose)"></i>
+                    <h4>Pharma & Biotech</h4>
+                </div>
+                <div class="industry-card reveal-on-scroll delay-2">
+                    <i class="fa-solid fa-utensils" style="color:var(--accent-amber)"></i>
+                    <h4>Food & Beverage</h4>
+                </div>
+                <div class="industry-card reveal-on-scroll delay-3">
+                    <i class="fa-solid fa-flask" style="color:var(--accent-cyan)"></i>
+                    <h4>Chemicals</h4>
+                </div>
+                <div class="industry-card reveal-on-scroll delay-1">
+                    <i class="fa-solid fa-bolt" style="color:var(--accent-emerald)"></i>
+                    <h4>Energy & Resources</h4>
+                </div>
+                <div class="industry-card reveal-on-scroll delay-2">
+                    <i class="fa-solid fa-server" style="color:var(--accent-blue)"></i>
+                    <h4>Data Centres</h4>
+                </div>
+                <div class="industry-card reveal-on-scroll delay-3">
+                    <i class="fa-solid fa-gears" style="color:var(--accent-purple)"></i>
+                    <h4>Discrete Manufacturing</h4>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHALLENGES FACED BY CLIENTS (INTERACTIVE) -->
+        <section id="challenges">
+            <div class="section-header reveal-on-scroll">
+                <span class="section-tag">Client Operational Pain Points</span>
+                <h2 class="section-title animated-heading">Challenges Faced by Clients</h2>
+            </div>
+            <div class="interactive-grid">
+                <div class="interactive-card reveal-on-scroll delay-1" onclick="showModal('Productivity & Cost Efficiency', 'Optimizing plant throughput and reducing operational overhead through streamlined workflow automation.', 'fa-chart-line', 'var(--accent-rose)')">
+                    <div class="interactive-card-header">
+                        <i class="fa-solid fa-chart-line" style="color:var(--accent-rose)"></i>
+                        <span class="interactive-card-title">Productivity & Cost Efficiency</span>
+                    </div>
+                    <div class="click-hint"><i class="fa-solid fa-hand-pointer"></i> Click to inspect</div>
+                </div>
+                <div class="interactive-card reveal-on-scroll delay-2" onclick="showModal('Industrial Safety', 'Minimizing operational risk and ensuring strict fail-safe parameters across high-hazard production zones.', 'fa-shield-halved', 'var(--accent-amber)')">
+                    <div class="interactive-card-header">
+                        <i class="fa-solid fa-shield-halved" style="color:var(--accent-amber)"></i>
+                        <span class="interactive-card-title">Industrial Safety</span>
+                    </div>
+                    <div class="click-hint"><i class="fa-solid fa-hand-pointer"></i> Click to inspect</div>
+                </div>
+                <div class="interactive-card reveal-on-scroll delay-3" onclick="showModal('Sustainability & Waste Reduction', 'Reducing energy consumption and minimizing raw material waste through data-driven resource monitoring.', 'fa-leaf', 'var(--accent-emerald)')">
+                    <div class="interactive-card-header">
+                        <i class="fa-solid fa-leaf" style="color:var(--accent-emerald)"></i>
+                        <span class="interactive-card-title">Sustainability & Waste Reduction</span>
+                    </div>
+                    <div class="click-hint"><i class="fa-solid fa-hand-pointer"></i> Click to inspect</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTLE & SWOT ANALYSIS -->
+        <section id="analytics">
+            <div class="section-header reveal-on-scroll">
+                <span class="section-tag">Strategic Intelligence</span>
+                <h2 class="section-title animated-heading">PESTLE & SWOT Demographic</h2>
+            </div>
+            
+            <div class="analytics-container">
+                <div class="pestle-wrapper reveal-on-scroll delay-1">
+                    <div class="chart-box">
+                        <div class="chart-wrapper">
+                            <canvas id="pestleChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="pestle-bullets">
+                        <div class="pestle-item">
+                            <div class="pestle-letter">P</div>
+                            <div class="pestle-text"><strong>Political</strong> Reshoring subsidies favor high-tech facility construction.</div>
+                        </div>
+                        <div class="pestle-item">
+                            <div class="pestle-letter" style="color:var(--accent-blue); background:rgba(59,130,246,0.1)">E</div>
+                            <div class="pestle-text"><strong>Economic</strong> Inflation and energy costs drive immediate ROI needs.</div>
+                        </div>
+                        <div class="pestle-item">
+                            <div class="pestle-letter" style="color:var(--accent-emerald); background:rgba(16,185,129,0.1)">S</div>
+                            <div class="pestle-text"><strong>Social</strong> Global skilled labor shortages mandate autonomous solutions.</div>
+                        </div>
+                        <div class="pestle-item">
+                            <div class="pestle-letter" style="color:var(--accent-amber); background:rgba(245,158,11,0.1)">T</div>
+                            <div class="pestle-text"><strong>Technological</strong> IT/OT convergence and IIoT create new standards.</div>
+                        </div>
+                        <div class="pestle-item">
+                            <div class="pestle-letter" style="color:var(--accent-rose); background:rgba(244,63,94,0.1)">L</div>
+                            <div class="pestle-text"><strong>Legal</strong> Strict GAMP and FDA compliance creates barriers to entry.</div>
+                        </div>
+                        <div class="pestle-item">
+                            <div class="pestle-letter" style="color:var(--accent-purple); background:rgba(168,85,247,0.1)">E</div>
+                            <div class="pestle-text"><strong>Environmental</strong> Sustainability mandates force resource optimization.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CLIENTS & COMPETITORS (NEW SECTION) -->
+        <section id="market">
+            <div class="section-header reveal-on-scroll">
+                <span class="section-tag">Market Ecosystem</span>
+                <h2 class="section-title animated-heading">Clients & Competitors</h2>
+            </div>
+            
+            <div class="market-split">
+                <!-- Clients Column -->
+                <div class="market-column reveal-on-scroll delay-1">
+                    <h3><i class="fa-solid fa-handshake" style="color:var(--accent-cyan)"></i> Trusted Clients</h3>
+                    <div class="company-list">
+                        <div class="company-item">
+                            <div class="emoji-icon">🏭</div>
+                            <span class="company-name">Siemens</span>
+                        </div>
+                        <div class="company-item">
+                            <div class="emoji-icon">🛡️</div>
+                            <span class="company-name">Aqua Security</span>
+                        </div>
+                        <div class="company-item">
+                            <div class="emoji-icon">🩺</div>
+                            <span class="company-name">LAP</span>
+                        </div>
+                        <div class="company-item">
+                            <div class="emoji-icon">🎓</div>
+                            <span class="company-name">DreamJ Institute</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Competitors Column -->
+                <div class="market-column reveal-on-scroll delay-2">
+                    <h3><i class="fa-solid fa-crosshairs" style="color:var(--accent-rose)"></i> Key Competitors</h3>
+                    <div class="company-list">
+                        <div class="company-item">
+                            <div class="emoji-icon">🔍</div>
+                            <span class="company-name">Keyence</span>
+                        </div>
+                        <div class="company-item">
+                            <div class="emoji-icon">🚀</div>
+                            <span class="company-name">Maverick Technologies</span>
+                        </div>
+                        <div class="company-item">
+                            <div class="emoji-icon">⚙️</div>
+                            <span class="company-name">Scott Technologies</span>
+                        </div>
+                        <div class="company-item">
+                            <div class="emoji-icon">🤖</div>
+                            <span class="company-name">Scott Automation</span>
+                        </div>
+                        <div class="company-item">
+                            <div class="emoji-icon">📡</div>
+                            <span class="company-name">Misumi Group & OPTEX Group</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FACTORY OF THE FUTURE -->
+        <section id="future">
+            <div class="section-header reveal-on-scroll">
+                <span class="section-tag">Aligning Experience</span>
+                <h2 class="section-title animated-heading">Factory of the Future</h2>
+                <p style="color:var(--text-muted); margin-top:0.5rem;">Click any card to reveal how my engineering background aligns with Orise's strategic investments.</p>
+            </div>
+            
+            <div class="future-grid">
+                <!-- Card 1 -->
+                <div class="flip-card reveal-on-scroll delay-1" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="future-num">01</div>
+                            <h3 class="future-title">Industrial Automation</h3>
+                            <p class="future-desc">Eliminate inefficiencies and achieve production precision.</p>
+                            <div class="click-hint"><i class="fa-solid fa-arrow-right-arrow-left"></i> Click to reveal my experience</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="back-title"><i class="fa-solid fa-check"></i> Pratik's Experience</div>
+                            <p class="back-desc">Automated a lathe machine with remote mobile/desktop control. Applied Overall Equipment Effectiveness (OEE) principles to maximize utilization, reduce downtime, and boost production efficiency.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="flip-card reveal-on-scroll delay-2" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="future-num">02</div>
+                            <h3 class="future-title">Sustainability Tools</h3>
+                            <p class="future-desc">Integrate renewable resources and meet compliance standards.</p>
+                            <div class="click-hint"><i class="fa-solid fa-arrow-right-arrow-left"></i> Click to reveal my experience</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="back-title"><i class="fa-solid fa-check"></i> Pratik's Experience</div>
+                            <p class="back-desc">Wrote my Master's thesis on Smart Charging Infrastructure. Developed complex Python simulations integrating renewables, BESS, and Vehicle-to-Grid (V2G) tech to ensure sustainable grid balancing.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="flip-card reveal-on-scroll delay-3" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="future-num">03</div>
+                            <h3 class="future-title">IIoT Connectivity</h3>
+                            <p class="future-desc">Centralize and utilize data for seamless operational insights.</p>
+                            <div class="click-hint"><i class="fa-solid fa-arrow-right-arrow-left"></i> Click to reveal my experience</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="back-title"><i class="fa-solid fa-check"></i> Pratik's Experience</div>
+                            <p class="back-desc">Gained a deep foundation in sensor technology and IoT protocols through my AMM degree. Active IEEE member constantly tracking industrial connectivity and data centralization standards.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="flip-card reveal-on-scroll delay-1" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="future-num">04</div>
+                            <h3 class="future-title">Digital Workflows</h3>
+                            <p class="future-desc">Reduce errors through consistent, automated processes.</p>
+                            <div class="click-hint"><i class="fa-solid fa-arrow-right-arrow-left"></i> Click to reveal my experience</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="back-title"><i class="fa-solid fa-check"></i> Pratik's Experience</div>
+                            <p class="back-desc">Analyzed 0% human-error fully automated pump manufacturing at Bosch Rexroth. Practical exposure to lean manufacturing workflows (Milkruns, Supermarkets) during on-site excursions at BMW and Siemens.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="flip-card reveal-on-scroll delay-2" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <div class="future-num">05</div>
+                            <h3 class="future-title">AI & Digital Models</h3>
+                            <p class="future-desc">Enable predictive maintenance and actionable intelligence.</p>
+                            <div class="click-hint"><i class="fa-solid fa-arrow-right-arrow-left"></i> Click to reveal my experience</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="back-title"><i class="fa-solid fa-check"></i> Pratik's Experience</div>
+                            <p class="back-desc">Developed interactive industrial conveyor belt simulations utilizing Unity. Successfully applied digital twin concepts for layout optimization, spatial logic, and predictive modeling.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- POPUP MODAL -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal-box">
+            <button class="modal-close" onclick="forceCloseModal()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-header">
+                <i id="modalIcon" class="fa-solid fa-circle-info"></i>
+                <div class="modal-title" id="modalTitle">Title</div>
+            </div>
+            <div class="modal-bullet" id="modalBullet">Bullet point content goes here.</div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Prepared for Pratik Hawal | Orise Interview Readiness Tool</p>
+    </footer>
+
+    <script>
+        // --- THEME TOGGLE LOGIC ---
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Check local storage for theme preference
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+            themeIcon.classList.replace('fa-sun', 'fa-moon');
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            if (document.body.classList.contains('light-mode')) {
+                themeIcon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'light');
+                updateChartColor('#0f172a'); // Update chart for light mode
+            } else {
+                themeIcon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'dark');
+                updateChartColor('#94a3b8'); // Update chart for dark mode
+            }
+        });
+
+        // --- SCROLL ANIMATION OBSERVER ---
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15
+        };
+
+        const scrollObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target); // Stop observing once animated
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal-on-scroll').forEach(elem => {
+            scrollObserver.observe(elem);
+        });
+
+        // --- MODAL LOGIC ---
+        function showModal(title, bulletText, iconClass, iconColor) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBullet').innerText = "• " + bulletText;
+            const iconElem = document.getElementById('modalIcon');
+            iconElem.className = 'fa-solid ' + iconClass;
+            iconElem.style.color = iconColor;
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+        function closeModal(event) {
+            if (event.target.id === 'modalOverlay') {
+                document.getElementById('modalOverlay').classList.remove('active');
+            }
+        }
+        function forceCloseModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        // --- PESTLE RADAR CHART ---
+        const ctx = document.getElementById('pestleChart').getContext('2d');
+        let pestleChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Political', 'Economic', 'Social', 'Technological', 'Legal', 'Environmental'],
+                datasets: [{
+                    label: 'Market Impact',
+                    data: [80, 75, 85, 95, 90, 70],
+                    backgroundColor: 'rgba(0, 242, 254, 0.2)',
+                    borderColor: '#00f2fe',
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#00f2fe'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(148, 163, 184, 0.2)' },
+                        grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                        pointLabels: { 
+                            color: document.body.classList.contains('light-mode') ? '#0f172a' : '#94a3b8', 
+                            font: { family: 'Inter', size: 11, weight: 600 } 
+                        },
+                        ticks: { display: false, max: 100 }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Function to update chart label colors when toggling themes
+        function updateChartColor(color) {
+            pestleChart.options.scales.r.pointLabels.color = color;
+            pestleChart.update();
+        }
+    </script>
+</body>
+</html>
